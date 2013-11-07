@@ -4,8 +4,8 @@ Given /the following movies exist/ do |movies_table|
   movies_table.hashes.each do |movie|
     # each returned element will be a hash whose key is the table header.
     # you should arrange to add that movie to the database here.
+    m = Movie.create!(movie)
   end
-  flunk "Unimplemented"
 end
 
 # Make sure that one string (regexp) occurs before or after another one
@@ -14,7 +14,9 @@ end
 Then /I should see "(.*)" before "(.*)"/ do |e1, e2|
   #  ensure that that e1 occurs before e2.
   #  page.body is the entire content of the page as a string.
-  flunk "Unimplemented"
+  movie1 = page.body.index(e1)
+  movie2 = page.body.index(e2)
+  movie1.should < movie2
 end
 
 # Make it easier to express checking or unchecking several boxes at once
@@ -25,4 +27,31 @@ When /I (un)?check the following ratings: (.*)/ do |uncheck, rating_list|
   # HINT: use String#split to split up the rating_list, then
   #   iterate over the ratings and reuse the "When I check..." or
   #   "When I uncheck..." steps in lines 89-95 of web_steps.rb
+
+  rating_list.split(', ').each do |rating|
+    if uncheck
+      step 'I uncheck "ratings['+rating.strip+']"'
+    else
+      step 'I check "ratings['+rating.strip+']"'
+    end
+  end
+end
+
+Then /I should see all of the movies/ do 
+  # count the table rows in the movies table on the homepage to be sure
+  # the value is the same as our total number of movies in the db
+  rows = all('table#movies tr').count-1
+  rows.should == Movie.count
+end
+
+Then /I should see the movies sorted by release date/ do
+  Movie.all(:order => :release_date).each_cons(2) do |movie1, movie2|
+    step %Q{I should see "#{movie1.title}" before "#{movie2.title}"}
+  end
+end
+
+Then /I should see the movies sorted alphabetically/ do
+  Movie.all(:order => :title).each_cons(2) do |movie1, movie2|
+    step %Q{I should see "#{movie1.title}" before "#{movie2.title}"}   
+  end
 end
